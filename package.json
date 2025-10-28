@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "start": "node server.js",
+  "dev": "nodemon server.js",
+    "cloudinary": "^1.41.3",
+    "konva": "^10.0.8",
+    "multer": "^2.0.2",
+    "multer-storage-cloudinary": "^4.0.0",
+    "react-konva": "^19.2.0"
+  }
+  
+}
