@@ -1,13 +1,33 @@
 import mongoose from "mongoose";
 
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("✅ MongoDB Connected Successfully");
-  } catch (error) {
-    console.error("❌ MongoDB Connection Error:", error.message);
-    process.exit(1);
+const userSchema = new mongoose.Schema({
+  username: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    trim: true,
+    minlength: 3
+  },
+  email: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    lowercase: true,
+    trim: true
+  },
+  passwordHash: { 
+    type: String, 
+    required: true 
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
+  },
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
   }
-};
+});
 
-export default connectDB;
+export default mongoose.model("User", userSchema);

@@ -1,12 +1,24 @@
 {
+  "name": "matty",
+  "version": "1.0.0",
+  "description": "Online Graphic Design Tool",
+  "scripts": {
+    "client": "cd client && npm start",
+    "server": "cd server && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install"
+  },
+  "keywords": ["design", "graphic", "mern"],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "start": "node server.js",
-  "dev": "nodemon server.js",
     "cloudinary": "^1.41.3",
     "konva": "^10.0.8",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
     "react-konva": "^19.2.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
-  
 }

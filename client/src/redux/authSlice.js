@@ -14,7 +14,11 @@ export const register = createAsyncThunk("auth/register", async (data) => {
 
 const authSlice = createSlice({
   name: "auth",
-  initialState: { user: null },
+  initialState: { 
+    user: null,
+    loading: false,
+    error: null
+  },
   reducers: {
     logout: (state) => {
       localStorage.removeItem("token");
@@ -23,8 +27,32 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(login.fulfilled, (state, action) => (state.user = action.payload))
-      .addCase(register.fulfilled, (state, action) => (state.user = action.payload));
+      // Login cases
+      .addCase(login.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(login.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+      })
+      .addCase(login.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      })
+      // Register cases
+      .addCase(register.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(register.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+      })
+      .addCase(register.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      });
   },
 });
 
