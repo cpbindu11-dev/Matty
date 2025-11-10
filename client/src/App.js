@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Editor from "./pages/Editor";
+import VideoEditor from "./pages/VideoEditor";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -27,6 +28,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Editor />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/video-editor"
+          element={
+            <ProtectedRoute>
+              <VideoEditor />
             </ProtectedRoute>
           }
         />
