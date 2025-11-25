@@ -1,871 +1,432 @@
-import { useEffect, useRef, useState } from "react";
-import { fabric } from "fabric";
-import { 
-  Box, Button, TextField, Paper, Stack, Typography, Divider,
-  Select, MenuItem, FormControl, InputLabel, Slider, Grid, IconButton,
-  Tabs, Tab, Card, Chip, ButtonGroup, Switch, FormControlLabel, Tooltip
-} from "@mui/material";
-import { 
-  Brush, FormatBold, FormatItalic, FormatUnderlined, RotateLeft,
-  RotateRight, Delete, Clear, Save, Download, Image as ImageIcon,
-  Layers, Palette, FilterVintage, Brightness6, Contrast, Tune,
-  ContentCut, FlipToBack, ZoomIn, ZoomOut, Undo, Redo
-} from "@mui/icons-material";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import API from "../utils/api";
+import React, { useState } from 'react';
+import { Layers, Type, Image, Palette, Grid, Layout, Download, Save, Undo, Redo, ZoomIn, ZoomOut, Crop, RotateCw, Trash2, Copy, Eye, EyeOff, Lock, Unlock, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, Upload, Sliders, Wand2, Droplet, Sun, Moon, Contrast, Filter, Scissors, FlipHorizontal, FlipVertical, Move, MousePointer, Square, Circle, Minus, Plus, ChevronDown, X, Check, Star, Heart, Smile, Crown, ArrowLeft } from 'lucide-react';
 
-// Import stickers library
-const STICKER_LIBRARY = [
-  { category: "Emojis", items: ["😀", "😍", "🔥", "✨", "🎉", "👍", "💯", "🚀", "⭐", "💪", "🎨", "💡"] },
-  { category: "Social", items: ["📱", "💬", "📷", "🎥", "🎵", "👥", "🌐", "📧", "📞", "💌", "✉️", "📲"] },
-  { category: "Business", items: ["💼", "📊", "💰", "📈", "🎯", "⚡", "🏆", "💡", "📅", "✅", "📝", "🔔"] }
-];
+const MattyProEditor = () => {
+  const [activePanel, setActivePanel] = useState('templates');
+  const [selectedLayer, setSelectedLayer] = useState(0);
+  const [zoom, setZoom] = useState(100);
+  const [activeTool, setActiveTool] = useState('select');
 
-const COLOR_PALETTE = [
-  "#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8",
-  "#F7DC6F", "#BB8FCE", "#85C1E2", "#F8B739", "#52BE80",
-  "#EC7063", "#AF7AC5", "#5DADE2", "#48C9B0", "#F4D03F",
-  "#EB984E", "#CACFD2", "#000000", "#FFFFFF", "#95A5A6"
-];
+  const layers = [
+    { id: 1, name: 'Background', type: 'fill', visible: true, locked: false, opacity: 100 },
+    { id: 2, name: 'Photo 1', type: 'image', visible: true, locked: false, opacity: 100 },
+    { id: 3, name: 'Overlay', type: 'shape', visible: true, locked: false, opacity: 80 },
+    { id: 4, name: 'Title Text', type: 'text', visible: true, locked: false, opacity: 100 }
+  ];
 
-const FONTS = [
-  "Arial", "Helvetica", "Times New Roman", "Georgia", "Verdana",
-  "Comic Sans MS", "Impact", "Trebuchet MS", "Arial Black", "Palatino"
-];
+  const collageLayouts = [
+    { name: '2 Photos', grid: '1x2', icon: '▢▢' },
+    { name: '3 Photos', grid: '1x3', icon: '▢▢▢' },
+    { name: '4 Grid', grid: '2x2', icon: '▦' },
+    { name: '6 Grid', grid: '2x3', icon: '▦▦' },
+    { name: '9 Grid', grid: '3x3', icon: '▦▦▦' },
+    { name: 'Heart', shape: 'heart', icon: '♥' },
+    { name: 'Circle', shape: 'circle', icon: '●' },
+    { name: 'Custom', shape: 'custom', icon: '✨' }
+  ];
 
-const BRUSH_TYPES = [
-  { name: "Pencil", value: "pencil" },
-  { name: "Brush", value: "brush" },
-  { name: "Spray", value: "spray" },
-  { name: "Marker", value: "marker" },
-  { name: "Eraser", value: "eraser" }
-];
+  const filters = [
+    { name: 'Original', preview: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+    { name: 'Vibrant', preview: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+    { name: 'Cool', preview: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+    { name: 'Warm', preview: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
+    { name: 'Vintage', preview: 'linear-gradient(135deg, #bc8f8f 0%, #d2b48c 100%)' },
+    { name: 'B&W', preview: 'linear-gradient(135deg, #000000 0%, #ffffff 100%)' },
+    { name: 'Sepia', preview: 'linear-gradient(135deg, #704214 0%, #daa520 100%)' },
+    { name: 'Sunset', preview: 'linear-gradient(135deg, #ff6b6b 0%, #ffe66d 100%)' }
+  ];
 
-const FILTERS = [
-  { name: "None", value: "none" },
-  { name: "Grayscale", value: "grayscale" },
-  { name: "Sepia", value: "sepia" },
-  { name: "Vintage", value: "vintage" },
-  { name: "Polaroid", value: "polaroid" },
-  { name: "Brighten", value: "brighten" },
-  { name: "Contrast+", value: "contrast" },
-  { name: "Invert", value: "invert" }
-];
+  const effects = [
+    { name: 'Blur', icon: '🌫️', type: 'blur' },
+    { name: 'Sharpen', icon: '✨', type: 'sharpen' },
+    { name: 'Glow', icon: '💡', type: 'glow' },
+    { name: 'Shadow', icon: '🌑', type: 'shadow' },
+    { name: 'Vignette', icon: '⚫', type: 'vignette' },
+    { name: 'Grain', icon: '📺', type: 'grain' },
+    { name: 'Bokeh', icon: '✨', type: 'bokeh' },
+    { name: 'Glitch', icon: '⚡', type: 'glitch' }
+  ];
 
-export default function Editor() {
-  const canvasRef = useRef(null);
-  const [canvas, setCanvas] = useState(null);
-  const fileInputRef = useRef(null);
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  
-  const [designTitle, setDesignTitle] = useState("Untitled Design");
-  const [currentTab, setCurrentTab] = useState(0);
-  const [selectedObject, setSelectedObject] = useState(null);
-  const [stickerTab, setStickerTab] = useState(0);
-  
-  // Drawing
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [brushType, setBrushType] = useState("pencil");
-  const [brushSize, setBrushSize] = useState(5);
-  const [brushColor, setBrushColor] = useState("#000000");
-  
-  // Text
-  const [textInput, setTextInput] = useState("");
-  const [fontSize, setFontSize] = useState(32);
-  const [fontFamily, setFontFamily] = useState("Arial");
-  const [textColor, setTextColor] = useState("#000000");
-  const [isBold, setIsBold] = useState(false);
-  const [isItalic, setIsItalic] = useState(false);
-  const [isUnderline, setIsUnderline] = useState(false);
-  
-  // Filters
-  const [brightness, setBrightness] = useState(0);
-  const [contrast, setContrast] = useState(0);
-  const [saturation, setSaturation] = useState(0);
-  const [blur, setBlur] = useState(0);
+  const backgrounds = [
+    { type: 'gradient', value: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+    { type: 'gradient', value: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+    { type: 'gradient', value: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+    { type: 'gradient', value: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
+    { type: 'gradient', value: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
+    { type: 'gradient', value: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' },
+    { type: 'solid', value: '#FFFFFF' },
+    { type: 'solid', value: '#000000' }
+  ];
 
-  useEffect(() => {
-    const fabricCanvas = new fabric.Canvas(canvasRef.current, {
-      width: 1080,
-      height: 1080,
-      backgroundColor: "#ffffff"
-    });
-    
-    setCanvas(fabricCanvas);
-    
-    fabricCanvas.on('selection:created', (e) => setSelectedObject(e.selected[0]));
-    fabricCanvas.on('selection:updated', (e) => setSelectedObject(e.selected[0]));
-    fabricCanvas.on('selection:cleared', () => setSelectedObject(null));
+  const textPresets = [
+    { name: 'Heading', size: 64, weight: 'bold', font: 'Inter' },
+    { name: 'Subheading', size: 48, weight: '600', font: 'Inter' },
+    { name: 'Body', size: 32, weight: 'normal', font: 'Inter' },
+    { name: 'Caption', size: 24, weight: 'normal', font: 'Inter' }
+  ];
 
-    // Load template if template ID is in URL
-    const templateId = searchParams.get('template');
-    if (templateId) {
-      loadTemplate(templateId, fabricCanvas);
-    }
+  const shapes = [
+    { name: 'Rectangle', icon: Square },
+    { name: 'Circle', icon: Circle },
+    { name: 'Line', icon: Minus },
+    { name: 'Arrow', icon: ArrowLeft }
+  ];
 
-    return () => fabricCanvas.dispose();
-  }, []);
-
-  const loadTemplate = (templateId, canvasInstance) => {
-    // Find template from PRESET_TEMPLATES
-    const PRESET_TEMPLATES = [
-      {
-        id: "social-1",
-        title: "Instagram Post - Summer Vibes",
-        width: 1080,
-        height: 1080,
-        elements: [
-          { type: "background", image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1080&fit=crop" },
-          { type: "text", content: "SUMMER VIBES", x: 540, y: 200, fontSize: 60, color: "#FFFFFF", fontWeight: "bold" },
-          { type: "sticker", emoji: "☀️", x: 900, y: 900, fontSize: 80 }
-        ]
-      },
-      {
-        id: "social-2",
-        title: "Instagram Story - Quote",
-        width: 1080,
-        height: 1920,
-        elements: [
-          { type: "background", color: "#FFA500" },
-          { type: "text", content: "Be Yourself", x: 540, y: 1500, fontSize: 48, color: "#FFFFFF" },
-          { type: "sticker", emoji: "✨", x: 100, y: 100, fontSize: 60 }
-        ]
-      },
-      {
-        id: "social-3",
-        title: "Facebook Cover - Business",
-        width: 1200,
-        height: 630,
-        elements: [
-          { type: "background", image: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&h=630&fit=crop" },
-          { type: "text", content: "YOUR BRAND", x: 600, y: 315, fontSize: 72, color: "#FFFFFF", fontWeight: "bold" }
-        ]
-      },
-      {
-        id: "popular-1",
-        title: "YouTube Thumbnail - Gaming",
-        width: 1280,
-        height: 720,
-        elements: [
-          { type: "background", image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1280&h=720&fit=crop" },
-          { type: "text", content: "EPIC GAMEPLAY", x: 200, y: 360, fontSize: 64, color: "#FFFFFF", fontWeight: "bold" },
-          { type: "sticker", emoji: "🎮", x: 1100, y: 600, fontSize: 80 }
-        ]
-      },
-      {
-        id: "business-1",
-        title: "Business Presentation Slide",
-        width: 1920,
-        height: 1080,
-        elements: [
-          { type: "background", color: "#FFFFFF" },
-          { type: "text", content: "Q4 Results", x: 960, y: 540, fontSize: 52, color: "#333333" }
-        ]
-      }
-    ];
-
-    const template = PRESET_TEMPLATES.find(t => t.id === templateId);
-    if (!template) return;
-
-    // Set canvas size
-    canvasInstance.setWidth(template.width);
-    canvasInstance.setHeight(template.height);
-    setDesignTitle(template.title);
-
-    // Load elements
-    template.elements.forEach(element => {
-      if (element.type === "background") {
-        if (element.image) {
-          fabric.Image.fromURL(element.image, (img) => {
-            img.set({
-              left: 0,
-              top: 0,
-              scaleX: template.width / img.width,
-              scaleY: template.height / img.height,
-              selectable: false
-            });
-            canvasInstance.add(img);
-            canvasInstance.sendToBack(img);
-            canvasInstance.renderAll();
-          });
-        } else if (element.color) {
-          canvasInstance.setBackgroundColor(element.color, canvasInstance.renderAll.bind(canvasInstance));
-        }
-      } else if (element.type === "text") {
-        const text = new fabric.Text(element.content, {
-          left: element.x,
-          top: element.y,
-          fontSize: element.fontSize,
-          fill: element.color,
-          fontWeight: element.fontWeight || 'normal',
-          originX: 'center',
-          originY: 'center'
-        });
-        canvasInstance.add(text);
-      } else if (element.type === "sticker") {
-        const sticker = new fabric.Text(element.emoji, {
-          left: element.x,
-          top: element.y,
-          fontSize: element.fontSize || 80,
-          originX: 'center',
-          originY: 'center'
-        });
-        canvasInstance.add(sticker);
-      }
-    });
-
-    canvasInstance.renderAll();
-  };
-
-  useEffect(() => {
-    if (!canvas) return;
-    
-    if (isDrawing) {
-      canvas.isDrawingMode = true;
-      switch(brushType) {
-        case 'spray':
-          canvas.freeDrawingBrush = new fabric.SprayBrush(canvas);
-          canvas.freeDrawingBrush.width = brushSize;
-          canvas.freeDrawingBrush.color = brushColor;
-          break;
-        case 'brush':
-          canvas.freeDrawingBrush = new fabric.CircleBrush(canvas);
-          canvas.freeDrawingBrush.width = brushSize;
-          canvas.freeDrawingBrush.color = brushColor;
-          break;
-        case 'marker':
-          canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-          canvas.freeDrawingBrush.width = brushSize * 2;
-          canvas.freeDrawingBrush.color = brushColor + '80';
-          break;
-        case 'eraser':
-          canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-          canvas.freeDrawingBrush.width = brushSize;
-          canvas.freeDrawingBrush.color = canvas.backgroundColor || "#ffffff";
-          break;
-        default:
-          canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-          canvas.freeDrawingBrush.width = brushSize;
-          canvas.freeDrawingBrush.color = brushColor;
-      }
-    } else {
-      canvas.isDrawingMode = false;
-    }
-  }, [isDrawing, brushType, brushSize, brushColor, canvas]);
-
-  const handleImageUpload = (e) => {
-    if (!canvas) return;
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      fabric.Image.fromURL(event.target.result, (img) => {
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const scale = Math.min(canvasWidth / img.width, canvasHeight / img.height) * 0.8;
-        
-        img.set({
-          left: canvasWidth / 2,
-          top: canvasHeight / 2,
-          originX: 'center',
-          originY: 'center',
-          scaleX: scale,
-          scaleY: scale
-        });
-        
-        canvas.add(img);
-        canvas.setActiveObject(img);
-        canvas.renderAll();
-      });
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const addText = () => {
-    if (!canvas || !textInput.trim()) return;
-    
-    const text = new fabric.Text(textInput, {
-      left: canvas.width / 2,
-      top: canvas.height / 2,
-      originX: 'center',
-      originY: 'center',
-      fontSize: fontSize,
-      fill: textColor,
-      fontFamily: fontFamily,
-      fontWeight: isBold ? 'bold' : 'normal',
-      fontStyle: isItalic ? 'italic' : 'normal',
-      underline: isUnderline
-    });
-    
-    canvas.add(text);
-    canvas.setActiveObject(text);
-    canvas.renderAll();
-    setTextInput("");
-  };
-
-  const addShape = (type) => {
-    if (!canvas) return;
-    
-    let shape;
-    const center = { x: canvas.width / 2, y: canvas.height / 2 };
-    
-    switch(type) {
-      case 'rectangle':
-        shape = new fabric.Rect({
-          left: center.x,
-          top: center.y,
-          originX: 'center',
-          originY: 'center',
-          width: 200,
-          height: 150,
-          fill: 'transparent',
-          stroke: brushColor,
-          strokeWidth: 3
-        });
-        break;
-      case 'circle':
-        shape = new fabric.Circle({
-          left: center.x,
-          top: center.y,
-          originX: 'center',
-          originY: 'center',
-          radius: 100,
-          fill: 'transparent',
-          stroke: brushColor,
-          strokeWidth: 3
-        });
-        break;
-      case 'triangle':
-        shape = new fabric.Triangle({
-          left: center.x,
-          top: center.y,
-          originX: 'center',
-          originY: 'center',
-          width: 150,
-          height: 150,
-          fill: 'transparent',
-          stroke: brushColor,
-          strokeWidth: 3
-        });
-        break;
-    }
-    
-    if (shape) {
-      canvas.add(shape);
-      canvas.setActiveObject(shape);
-      canvas.renderAll();
-    }
-  };
-
-  const applyFilter = (filterType) => {
-    if (!selectedObject || selectedObject.type !== 'image') {
-      alert("Please select an image first!");
-      return;
-    }
-
-    selectedObject.filters = [];
-
-    switch(filterType) {
-      case 'grayscale':
-        selectedObject.filters.push(new fabric.Image.filters.Grayscale());
-        break;
-      case 'sepia':
-        selectedObject.filters.push(new fabric.Image.filters.Sepia());
-        break;
-      case 'vintage':
-        selectedObject.filters.push(new fabric.Image.filters.Sepia());
-        selectedObject.filters.push(new fabric.Image.filters.Brightness({ brightness: -0.1 }));
-        break;
-      case 'polaroid':
-        selectedObject.filters.push(new fabric.Image.filters.Sepia());
-        selectedObject.filters.push(new fabric.Image.filters.Brightness({ brightness: 0.1 }));
-        selectedObject.filters.push(new fabric.Image.filters.Contrast({ contrast: 0.1 }));
-        break;
-      case 'brighten':
-        selectedObject.filters.push(new fabric.Image.filters.Brightness({ brightness: 0.3 }));
-        break;
-      case 'contrast':
-        selectedObject.filters.push(new fabric.Image.filters.Contrast({ contrast: 0.3 }));
-        break;
-      case 'invert':
-        selectedObject.filters.push(new fabric.Image.filters.Invert());
-        break;
-    }
-
-    selectedObject.applyFilters();
-    canvas.renderAll();
-  };
-
-  const applyCustomFilters = () => {
-    if (!selectedObject || selectedObject.type !== 'image') return;
-
-    selectedObject.filters = [];
-    
-    if (brightness !== 0) {
-      selectedObject.filters.push(new fabric.Image.filters.Brightness({ brightness: brightness / 100 }));
-    }
-    if (contrast !== 0) {
-      selectedObject.filters.push(new fabric.Image.filters.Contrast({ contrast: contrast / 100 }));
-    }
-    if (saturation !== 0) {
-      selectedObject.filters.push(new fabric.Image.filters.Saturation({ saturation: saturation / 100 }));
-    }
-    if (blur !== 0) {
-      selectedObject.filters.push(new fabric.Image.filters.Blur({ blur: blur / 100 }));
-    }
-
-    selectedObject.applyFilters();
-    canvas.renderAll();
-  };
-
-  const removeBackground = () => {
-    if (!selectedObject || selectedObject.type !== 'image') {
-      alert("Please select an image first!");
-      return;
-    }
-    alert("Background removal requires an AI API (e.g., remove.bg). This is a placeholder for the feature.");
-  };
-
-  const rotateObject = (direction) => {
-    if (!selectedObject) return;
-    const currentAngle = selectedObject.angle || 0;
-    selectedObject.rotate(currentAngle + (direction === 'left' ? -15 : 15));
-    canvas.renderAll();
-  };
-
-  const flipObject = (direction) => {
-    if (!selectedObject) return;
-    if (direction === 'horizontal') {
-      selectedObject.set('flipX', !selectedObject.flipX);
-    } else {
-      selectedObject.set('flipY', !selectedObject.flipY);
-    }
-    canvas.renderAll();
-  };
-
-  const deleteSelected = () => {
-    if (!selectedObject) return;
-    canvas.remove(selectedObject);
-    canvas.renderAll();
-  };
-
-  const clearCanvas = () => {
-    if (confirm("Clear entire canvas?")) {
-      canvas.clear();
-      canvas.backgroundColor = "#ffffff";
-      canvas.renderAll();
-    }
-  };
-
-  const saveDesign = async () => {
-    if (!canvas) return;
-    try {
-      const jsonData = canvas.toJSON();
-      const thumbnailUrl = canvas.toDataURL({ format: "png", quality: 0.8 });
-      await API.post("/designs", { title: designTitle, jsonData, thumbnailUrl });
-      alert("✅ Design saved successfully!");
-      navigate("/dashboard");
-    } catch (error) {
-      console.error("Error saving design:", error);
-      alert("❌ Failed to save design");
-    }
-  };
-
-  const addSticker = (emoji) => {
-    if (!canvas) return;
-    
-    const text = new fabric.Text(emoji, {
-      left: canvas.width / 2,
-      top: canvas.height / 2,
-      fontSize: 80,
-      originX: 'center',
-      originY: 'center'
-    });
-    
-    canvas.add(text);
-    canvas.setActiveObject(text);
-    canvas.renderAll();
-  };
-
-  const exportImage = (format) => {
-    if (!canvas) return;
-    const dataURL = canvas.toDataURL({ 
-      format: format, 
-      quality: format === 'png' ? 1 : 0.9, 
-      multiplier: 2 
-    });
-    const link = document.createElement("a");
-    link.download = `${designTitle}.${format}`;
-    link.href = dataURL;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const stickers = ['😀', '❤️', '⭐', '🎉', '👍', '💯', '🔥', '✨', '💪', '🎨', '📷', '🎵'];
 
   return (
-    <Box sx={{ display: "flex", height: "100vh", background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}>
-      {/* Sidebar */}
-      <Paper 
-        sx={{ 
-          width: 350, 
-          overflowY: "auto",
-          background: "rgba(255,255,255,0.95)",
-          backdropFilter: "blur(10px)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
-        }}
-      >
-        {/* Header */}
-        <Box sx={{ p: 2, background: "linear-gradient(135deg, #667eea, #764ba2)", color: "white" }}>
-          <Button
-            size="small"
-            onClick={() => navigate("/dashboard")}
-            sx={{ color: "white", mb: 1 }}
-          >
-            ← Back to Dashboard
-          </Button>
-          <TextField
-            fullWidth
-            value={designTitle}
-            onChange={(e) => setDesignTitle(e.target.value)}
-            variant="outlined"
-            size="small"
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                color: "white",
-                "& fieldset": { borderColor: "rgba(255,255,255,0.3)" },
-                "&:hover fieldset": { borderColor: "rgba(255,255,255,0.5)" },
-                "&.Mui-focused fieldset": { borderColor: "white" }
-              }
-            }}
-          />
-        </Box>
-
-        {/* Tabs */}
-        <Tabs 
-          value={currentTab} 
-          onChange={(e, v) => setCurrentTab(v)} 
-          variant="fullWidth"
-          sx={{
-            borderBottom: 1,
-            borderColor: "divider",
-            "& .MuiTab-root": { fontWeight: 600, textTransform: "none" }
-          }}
+    <div className="h-screen flex bg-slate-50">
+      {/* Left Toolbar */}
+      <div className="w-20 bg-white border-r border-slate-200 flex flex-col items-center py-4 gap-2">
+        <button
+          onClick={() => setActiveTool('select')}
+          className={`p-3 rounded-lg transition ${activeTool === 'select' ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100'}`}
+          title="Select"
         >
-          <Tab label="🖌️ Draw" />
-          <Tab label="📝 Text" />
-          <Tab label="🎨 Effects" />
-          <Tab label="🎭 Stickers" />
-        </Tabs>
+          <MousePointer className="w-5 h-5" />
+        </button>
+        
+        <button
+          onClick={() => setActiveTool('crop')}
+          className={`p-3 rounded-lg transition ${activeTool === 'crop' ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100'}`}
+          title="Crop"
+        >
+          <Crop className="w-5 h-5" />
+        </button>
+        
+        <button
+          onClick={() => setActiveTool('text')}
+          className={`p-3 rounded-lg transition ${activeTool === 'text' ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100'}`}
+          title="Text"
+        >
+          <Type className="w-5 h-5" />
+        </button>
+        
+        <button
+          onClick={() => setActiveTool('shape')}
+          className={`p-3 rounded-lg transition ${activeTool === 'shape' ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100'}`}
+          title="Shapes"
+        >
+          <Square className="w-5 h-5" />
+        </button>
+        
+        <button
+          onClick={() => setActiveTool('draw')}
+          className={`p-3 rounded-lg transition ${activeTool === 'draw' ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100'}`}
+          title="Draw"
+        >
+          <Palette className="w-5 h-5" />
+        </button>
+        
+        <label className="p-3 hover:bg-slate-100 rounded-lg cursor-pointer transition" title="Upload">
+          <Upload className="w-5 h-5" />
+          <input type="file" className="hidden" accept="image/*" />
+        </label>
 
-        <Box sx={{ p: 2 }}>
-          {/* DRAW TAB */}
-          {currentTab === 0 && (
-            <Stack spacing={2}>
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={() => fileInputRef.current.click()}
-                startIcon={<ImageIcon />}
-                sx={{
-                  background: "linear-gradient(45deg, #667eea, #764ba2)",
-                  py: 1.5,
-                  fontWeight: 600
-                }}
-              >
-                Upload Image
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={handleImageUpload}
-              />
+        <div className="flex-1"></div>
 
-              <Divider />
+        <button className="p-3 hover:bg-slate-100 rounded-lg transition" title="Undo">
+          <Undo className="w-5 h-5" />
+        </button>
+        
+        <button className="p-3 hover:bg-slate-100 rounded-lg transition" title="Redo">
+          <Redo className="w-5 h-5" />
+        </button>
+      </div>
 
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Drawing Tools</Typography>
-              
-              <FormControl fullWidth size="small">
-                <InputLabel>Brush Type</InputLabel>
-                <Select value={brushType} label="Brush Type" onChange={(e) => setBrushType(e.target.value)}>
-                  {BRUSH_TYPES.map((brush) => (
-                    <MenuItem key={brush.value} value={brush.value}>{brush.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControlLabel
-                control={<Switch checked={isDrawing} onChange={(e) => setIsDrawing(e.target.checked)} />}
-                label="Enable Drawing Mode"
-              />
-
-              {isDrawing && (
-                <>
-                  <Box>
-                    <Typography variant="caption">Brush Size: {brushSize}px</Typography>
-                    <Slider value={brushSize} onChange={(e, v) => setBrushSize(v)} min={1} max={50} />
-                  </Box>
-
-                  <Box>
-                    <Typography variant="caption" sx={{ mb: 1, display: "block" }}>Brush Color</Typography>
-                    <Grid container spacing={0.5}>
-                      {COLOR_PALETTE.slice(0, 15).map((color) => (
-                        <Grid item xs={2.4} key={color}>
-                          <Box
-                            onClick={() => setBrushColor(color)}
-                            sx={{
-                              width: "100%",
-                              height: 35,
-                              bgcolor: color,
-                              border: brushColor === color ? "3px solid #000" : "1px solid #ddd",
-                              borderRadius: 1,
-                              cursor: "pointer",
-                              transition: "transform 0.2s",
-                              "&:hover": { transform: "scale(1.1)" }
-                            }}
-                          />
-                        </Grid>
-                      ))}
-                    </Grid>
-                  </Box>
-                </>
-              )}
-
-              <Divider />
-
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Shapes</Typography>
-              <ButtonGroup fullWidth variant="outlined">
-                <Button onClick={() => addShape('rectangle')}>□ Rect</Button>
-                <Button onClick={() => addShape('circle')}>○ Circle</Button>
-                <Button onClick={() => addShape('triangle')}>△ Triangle</Button>
-              </ButtonGroup>
-
-              <Divider />
-
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Transform</Typography>
-              <Grid container spacing={1}>
-                <Grid item xs={6}>
-                  <Button fullWidth variant="outlined" onClick={() => rotateObject('left')} startIcon={<RotateLeft />}>Rotate</Button>
-                </Grid>
-                <Grid item xs={6}>
-                  <Button fullWidth variant="outlined" onClick={() => flipObject('horizontal')} startIcon={<FlipToBack />}>Flip</Button>
-                </Grid>
-                <Grid item xs={12}>
-                  <Button fullWidth variant="outlined" color="error" onClick={deleteSelected} startIcon={<Delete />}>Delete Selected</Button>
-                </Grid>
-              </Grid>
-            </Stack>
-          )}
-
-          {/* TEXT TAB */}
-          {currentTab === 1 && (
-            <Stack spacing={2}>
-              <Box sx={{ display: "flex", gap: 1 }}>
-                <IconButton 
-                  size="small" 
-                  color={isBold ? "primary" : "default"}
-                  onClick={() => setIsBold(!isBold)}
-                  sx={{ border: 1 }}
-                >
-                  <FormatBold />
-                </IconButton>
-                <IconButton 
-                  size="small" 
-                  color={isItalic ? "primary" : "default"}
-                  onClick={() => setIsItalic(!isItalic)}
-                  sx={{ border: 1 }}
-                >
-                  <FormatItalic />
-                </IconButton>
-                <IconButton 
-                  size="small" 
-                  color={isUnderline ? "primary" : "default"}
-                  onClick={() => setIsUnderline(!isUnderline)}
-                  sx={{ border: 1 }}
-                >
-                  <FormatUnderlined />
-                </IconButton>
-              </Box>
-
-              <FormControl fullWidth size="small">
-                <InputLabel>Font Family</InputLabel>
-                <Select value={fontFamily} label="Font Family" onChange={(e) => setFontFamily(e.target.value)}>
-                  {FONTS.map((font) => (
-                    <MenuItem key={font} value={font} style={{ fontFamily: font }}>{font}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <Box>
-                <Typography variant="caption">Font Size: {fontSize}px</Typography>
-                <Slider value={fontSize} onChange={(e, v) => setFontSize(v)} min={12} max={120} />
-              </Box>
-
-              <Box>
-                <Typography variant="caption" sx={{ mb: 1, display: "block" }}>Text Color</Typography>
-                <Grid container spacing={0.5}>
-                  {COLOR_PALETTE.map((color) => (
-                    <Grid item xs={2.4} key={color}>
-                      <Box
-                        onClick={() => setTextColor(color)}
-                        sx={{
-                          width: "100%",
-                          height: 35,
-                          bgcolor: color,
-                          border: textColor === color ? "3px solid #000" : "1px solid #ddd",
-                          borderRadius: 1,
-                          cursor: "pointer",
-                          "&:hover": { transform: "scale(1.1)" }
-                        }}
-                      />
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
-
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                label="Enter Text"
-                value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
-              />
-              
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={addText}
-                disabled={!textInput.trim()}
-                sx={{ background: "linear-gradient(45deg, #667eea, #764ba2)", py: 1.5 }}
-              >
-                Add Text
-              </Button>
-            </Stack>
-          )}
-
-          {/* EFFECTS TAB */}
-          {currentTab === 2 && (
-            <Stack spacing={2}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Quick Filters</Typography>
-              <Grid container spacing={1}>
-                {FILTERS.map((filter) => (
-                  <Grid item xs={6} key={filter.value}>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      size="small"
-                      onClick={() => applyFilter(filter.value)}
-                    >
-                      {filter.name}
-                    </Button>
-                  </Grid>
-                ))}
-              </Grid>
-
-              <Divider />
-
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Custom Adjustments</Typography>
-              
-              <Box>
-                <Typography variant="caption">Brightness: {brightness}</Typography>
-                <Slider value={brightness} onChange={(e, v) => setBrightness(v)} min={-100} max={100} />
-              </Box>
-
-              <Box>
-                <Typography variant="caption">Contrast: {contrast}</Typography>
-                <Slider value={contrast} onChange={(e, v) => setContrast(v)} min={-100} max={100} />
-              </Box>
-
-              <Box>
-                <Typography variant="caption">Saturation: {saturation}</Typography>
-                <Slider value={saturation} onChange={(e, v) => setSaturation(v)} min={-100} max={100} />
-              </Box>
-
-              <Box>
-                <Typography variant="caption">Blur: {blur}</Typography>
-                <Slider value={blur} onChange={(e, v) => setBlur(v)} min={0} max={100} />
-              </Box>
-
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={applyCustomFilters}
-                sx={{ background: "linear-gradient(45deg, #667eea, #764ba2)" }}
-              >
-                Apply Filters
-              </Button>
-
-              <Button
-                fullWidth
-                variant="outlined"
-                onClick={() => { setBrightness(0); setContrast(0); setSaturation(0); setBlur(0); }}
-              >
-                Reset Filters
-              </Button>
-
-              <Divider />
-
-              <Button
-                fullWidth
-                variant="contained"
-                color="secondary"
-                onClick={removeBackground}
-                startIcon={<ContentCut />}
-              >
-                Remove Background (AI)
-              </Button>
-            </Stack>
-          )}
-        </Box>
-
-        {/* Bottom Actions */}
-        <Box sx={{ p: 2, borderTop: 1, borderColor: "divider", background: "#f5f5f5" }}>
-          <Stack spacing={1}>
-            <Button
-              fullWidth
-              variant="contained"
-              color="success"
-              onClick={saveDesign}
-              startIcon={<Save />}
-              sx={{ py: 1.5, fontWeight: 600 }}
+      {/* Left Panel */}
+      <div className="w-80 bg-white border-r border-slate-200 flex flex-col">
+        <div className="p-4 border-b border-slate-200">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActivePanel('templates')}
+              className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition ${
+                activePanel === 'templates' ? 'bg-purple-600 text-white' : 'bg-slate-100 hover:bg-slate-200'
+              }`}
             >
-              Save Design
-            </Button>
-            <ButtonGroup fullWidth>
-              <Button onClick={() => exportImage('png')} startIcon={<Download />}>PNG</Button>
-              <Button onClick={() => exportImage('jpeg')} startIcon={<Download />}>JPG</Button>
-            </ButtonGroup>
-            <Button fullWidth variant="outlined" color="error" onClick={clearCanvas} startIcon={<Clear />}>
-              Clear Canvas
-            </Button>
-          </Stack>
-        </Box>
-      </Paper>
+              Templates
+            </button>
+            <button
+              onClick={() => setActivePanel('layers')}
+              className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition ${
+                activePanel === 'layers' ? 'bg-purple-600 text-white' : 'bg-slate-100 hover:bg-slate-200'
+              }`}
+            >
+              <Layers className="w-4 h-4 inline mr-1" />
+              Layers
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          {activePanel === 'templates' && (
+            <div className="space-y-6">
+              {/* Collage Layouts */}
+              <div>
+                <h3 className="font-bold mb-3 flex items-center gap-2">
+                  <Grid className="w-5 h-5 text-purple-600" />
+                  Collage Layouts
+                </h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {collageLayouts.map((layout, idx) => (
+                    <button
+                      key={idx}
+                      className="p-4 bg-slate-50 hover:bg-slate-100 rounded-lg transition text-center border-2 border-transparent hover:border-purple-500"
+                    >
+                      <div className="text-3xl mb-2">{layout.icon}</div>
+                      <div className="text-xs font-semibold text-slate-700">{layout.name}</div>
+                      <div className="text-xs text-slate-500">{layout.grid || layout.shape}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div>
+                <h3 className="font-bold mb-3">Quick Actions</h3>
+                <div className="space-y-2">
+                  <button className="w-full p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:shadow-lg transition">
+                    🖼️ Remove Background (AI)
+                  </button>
+                  <button className="w-full p-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg transition">
+                    ✨ Smart Enhance
+                  </button>
+                  <button className="w-full p-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg font-semibold hover:shadow-lg transition">
+                    🎨 Auto Color Correct
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activePanel === 'layers' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-lg">Layers</h3>
+                <button className="p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+
+              {layers.map((layer) => (
+                <div
+                  key={layer.id}
+                  className={`p-3 rounded-lg cursor-pointer transition ${
+                    selectedLayer === layer.id ? 'bg-purple-50 border-2 border-purple-500' : 'bg-slate-50 hover:bg-slate-100 border-2 border-transparent'
+                  }`}
+                  onClick={() => setSelectedLayer(layer.id)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {layer.type === 'image' && <Image className="w-4 h-4 text-blue-600" />}
+                      {layer.type === 'text' && <Type className="w-4 h-4 text-green-600" />}
+                      {layer.type === 'shape' && <Square className="w-4 h-4 text-orange-600" />}
+                      {layer.type === 'fill' && <Palette className="w-4 h-4 text-purple-600" />}
+                      <span className="font-semibold text-sm">{layer.name}</span>
+                    </div>
+                    <div className="flex gap-1">
+                      <button className="p-1 hover:bg-white rounded">
+                        {layer.visible ? <Eye className="w-4 h-4 text-slate-600" /> : <EyeOff className="w-4 h-4 text-slate-400" />}
+                      </button>
+                      <button className="p-1 hover:bg-white rounded">
+                        {layer.locked ? <Lock className="w-4 h-4 text-slate-600" /> : <Unlock className="w-4 h-4 text-slate-400" />}
+                      </button>
+                      <button className="p-1 hover:bg-white rounded text-red-500">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500">Opacity</span>
+                    <input type="range" min="0" max="100" value={layer.opacity} className="flex-1" />
+                    <span className="text-xs text-slate-600 font-mono">{layer.opacity}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Canvas Area */}
-      <Box sx={{ 
-        flex: 1, 
-        display: "flex", 
-        alignItems: "center", 
-        justifyContent: "center",
-        p: 3
-      }}>
-        <Paper
-          elevation={10}
-          sx={{
-            p: 2,
-            borderRadius: 3,
-            background: "white",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.3)"
-          }}
-        >
-          <canvas ref={canvasRef} />
-        </Paper>
-      </Box>
-    </Box>
+      <div className="flex-1 flex flex-col bg-slate-100">
+        {/* Top Toolbar */}
+        <div className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
+          <div className="flex items-center gap-3">
+            <button className="text-slate-600 hover:text-slate-900 font-semibold">
+              Untitled Design
+            </button>
+            <div className="flex items-center gap-2 ml-4">
+              <button className="p-2 hover:bg-slate-100 rounded-lg transition">
+                <ZoomOut className="w-5 h-5" />
+              </button>
+              <span className="text-sm font-mono bg-slate-100 px-3 py-1 rounded">{zoom}%</span>
+              <button className="p-2 hover:bg-slate-100 rounded-lg transition">
+                <ZoomIn className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-semibold transition flex items-center gap-2">
+              <Save className="w-4 h-4" />
+              Save Draft
+            </button>
+            <button className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:shadow-lg transition flex items-center gap-2">
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            <button className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-bold transition flex items-center gap-2">
+              <Crown className="w-4 h-4" />
+              Pro
+            </button>
+          </div>
+        </div>
+
+        {/* Canvas */}
+        <div className="flex-1 flex items-center justify-center p-8 overflow-auto">
+          <div className="bg-white rounded-lg shadow-2xl" style={{ width: '800px', height: '800px' }}>
+            <div className="w-full h-full bg-gradient-to-br from-purple-100 via-pink-50 to-orange-100 rounded-lg flex items-center justify-center border-2 border-slate-200">
+              <div className="text-center text-slate-400">
+                <Grid className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <div className="text-xl font-semibold mb-2">Your Design Canvas</div>
+                <div className="text-sm">Drag and drop images or select a template</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel */}
+      <div className="w-80 bg-white border-l border-slate-200 flex flex-col overflow-y-auto">
+        <div className="p-4 border-b border-slate-200">
+          <h3 className="font-bold text-lg mb-4">Design Tools</h3>
+        </div>
+
+        <div className="flex-1 p-4 space-y-6">
+          {/* Filters */}
+          <div>
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <Filter className="w-5 h-5 text-purple-600" />
+              Filters
+            </h4>
+            <div className="grid grid-cols-4 gap-2">
+              {filters.map((filter, idx) => (
+                <button
+                  key={idx}
+                  className="aspect-square rounded-lg hover:ring-2 ring-purple-500 transition"
+                  style={{ background: filter.preview }}
+                  title={filter.name}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Effects */}
+          <div>
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <Wand2 className="w-5 h-5 text-purple-600" />
+              Effects
+            </h4>
+            <div className="grid grid-cols-4 gap-2">
+              {effects.map((effect, idx) => (
+                <button
+                  key={idx}
+                  className="p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition text-center border-2 border-transparent hover:border-purple-500"
+                >
+                  <div className="text-2xl mb-1">{effect.icon}</div>
+                  <div className="text-xs font-semibold">{effect.name}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Adjustments */}
+          <div>
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <Sliders className="w-5 h-5 text-purple-600" />
+              Adjustments
+            </h4>
+            <div className="space-y-3">
+              {[
+                { name: 'Brightness', icon: Sun },
+                { name: 'Contrast', icon: Contrast },
+                { name: 'Saturation', icon: Droplet },
+                { name: 'Temperature', icon: Sun }
+              ].map((adj, idx) => (
+                <div key={idx}>
+                  <div className="flex justify-between items-center text-sm mb-1">
+                    <span className="flex items-center gap-2">
+                      <adj.icon className="w-4 h-4" />
+                      {adj.name}
+                    </span>
+                    <span className="text-slate-500 font-mono">0</span>
+                  </div>
+                  <input type="range" min="-100" max="100" defaultValue="0" className="w-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Backgrounds */}
+          <div>
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <Layout className="w-5 h-5 text-purple-600" />
+              Backgrounds
+            </h4>
+            <div className="grid grid-cols-4 gap-2">
+              {backgrounds.map((bg, idx) => (
+                <button
+                  key={idx}
+                  className="aspect-square rounded-lg hover:ring-2 ring-purple-500 transition"
+                  style={{ background: bg.value }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Stickers */}
+          <div>
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <Smile className="w-5 h-5 text-purple-600" />
+              Stickers & Emojis
+            </h4>
+            <div className="grid grid-cols-6 gap-2">
+              {stickers.map((sticker, idx) => (
+                <button
+                  key={idx}
+                  className="aspect-square bg-slate-50 hover:bg-slate-100 rounded-lg transition text-2xl flex items-center justify-center"
+                >
+                  {sticker}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Text Styles */}
+          <div>
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <Type className="w-5 h-5 text-purple-600" />
+              Text Styles
+            </h4>
+            <div className="space-y-2">
+              {textPresets.map((preset, idx) => (
+                <button
+                  key={idx}
+                  className="w-full p-3 bg-slate-50 hover:bg-slate-100 rounded-lg text-left transition"
+                >
+                  <div style={{ fontSize: `${preset.size / 4}px`, fontWeight: preset.weight }}>
+                    {preset.name}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">{preset.font} · {preset.size}px</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
-}
+};
+
+export default MattyProEditor;
